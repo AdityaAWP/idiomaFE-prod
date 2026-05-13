@@ -1,5 +1,6 @@
 import AppShell from '../components/AppShell';
 import { PartnerProvider } from '../context/PartnerContext';
+import { LanguageProvider } from '../context/LanguageContext';
 
 export default function DashboardLayout({
   children,
@@ -7,8 +8,10 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <PartnerProvider>
-      <AppShell>{children}</AppShell>
-    </PartnerProvider>
+    <LanguageProvider>
+      <PartnerProvider>
+        <AppShell>{children}</AppShell>
+      </PartnerProvider>
+    </LanguageProvider>
   );
 }

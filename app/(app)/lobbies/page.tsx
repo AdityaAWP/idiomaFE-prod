@@ -76,7 +76,7 @@ export default function LobbiesPage() {
           <p className="text-gray-500">Join a 5-person group conversation and practice together.</p>
         </div>
         
-        <Link href="/lobbies/create" className="bg-black hover:bg-gray-800 text-white px-6 py-2.5 rounded-md font-medium shadow-sm transition-all flex items-center justify-center gap-2">
+        <Link href="/lobbies/create" className="bg-gradient-to-r from-[#c99614] to-[#c99614] hover:from-[#a87a10] hover:to-[#a87a10] text-white px-6 py-2.5 rounded-xl font-semibold shadow-md shadow-[#c99614]/20 transition-all flex items-center justify-center gap-2 hover:scale-105">
           <Plus size={18} /> Create Lobby
         </Link>
       </div>
@@ -88,20 +88,20 @@ export default function LobbiesPage() {
           <input 
             type="text" 
             placeholder="Search topics, languages, or users..." 
-            className="w-full bg-gray-50 border border-gray-200 rounded-md pl-12 pr-4 py-2.5 focus:ring-1 focus:ring-black focus:border-black transition-all"
+            className="w-full bg-gray-50 border border-gray-200 rounded-md pl-12 pr-4 py-2.5 focus:ring-1 focus:ring-[#c99614] focus:border-[#c99614] transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className="flex gap-2">
-          <select className="bg-gray-50 border border-gray-200 rounded-md px-4 py-2.5 text-gray-700 font-medium cursor-pointer focus:ring-1 focus:ring-black focus:border-black appearance-none min-w-[140px]">
+          <select className="bg-gray-50 border border-gray-200 rounded-md px-4 py-2.5 text-gray-700 font-medium cursor-pointer focus:ring-1 focus:ring-[#c99614] focus:border-[#c99614] appearance-none min-w-[140px]">
             <option value="">Any Language</option>
             <option value="en">English</option>
             <option value="es">Spanish</option>
             <option value="ja">Japanese</option>
             <option value="ko">Korean</option>
           </select>
-          <button className="w-12 h-[42px] bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center text-gray-500 hover:text-black hover:border-black transition-colors shadow-sm">
+          <button className="w-12 h-[42px] bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center text-gray-500 hover:text-[#c99614] hover:border-[#c99614] transition-colors shadow-sm">
             <Filter size={18} />
           </button>
         </div>
@@ -144,10 +144,10 @@ export default function LobbiesPage() {
                   disabled={lobby.capacity === lobby.maxCapacity || isRequesting === lobby.id}
                   className={`w-full py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${
                     isRequesting === lobby.id 
-                      ? 'bg-gray-100 text-gray-400 border border-transparent'
+                      ? 'bg-[#FBF4E0] text-[#c99614] border border-transparent'
                       : lobby.capacity === lobby.maxCapacity
                         ? 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-200'
-                        : 'bg-white text-gray-700 border border-gray-200 hover:border-black hover:text-black shadow-sm'
+                        : 'bg-white text-gray-700 border border-gray-200 hover:border-[#c99614] hover:text-[#c99614] shadow-sm'
                   }`}
                 >
                   {isRequesting === lobby.id ? (

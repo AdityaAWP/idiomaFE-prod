@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -14,13 +13,7 @@ import {
   ChevronRight,
   Globe,
 } from 'lucide-react';
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ReactNode;
-  badge?: number;
-}
+import { useLanguage } from '../context/LanguageContext';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -29,52 +22,27 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
-const mainNavItems: NavItem[] = [
-  {
-    label: 'Dashboard',
-    href: '/dashboard',
-    icon: <LayoutDashboard size={20} />,
-  },
-  {
-    label: 'Find Partner',
-    href: '/find-partner',
-    icon: <Search size={20} />,
-  },
-  {
-    label: 'Lobbies',
-    href: '/lobbies',
-    icon: <Globe size={20} />,
-  },
-];
-
-const socialNavItems: NavItem[] = [
-  {
-    label: 'Friends',
-    href: '/friends',
-    icon: <UserPlus size={20} />,
-    badge: 3,
-  },
-  {
-    label: 'Messages',
-    href: '/messages',
-    icon: <MessageSquare size={20} />,
-    badge: 5,
-  },
-];
-
-const accountNavItems: NavItem[] = [
-  {
-    label: 'Profile',
-    href: '/profile',
-    icon: <User size={20} />,
-  },
-];
-
 export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
-  const renderNavItem = (item: NavItem) => {
+  const mainNavItems = [
+    { labelKey: 'sidebar.dashboard', href: '/dashboard', icon: <LayoutDashboard size={20} /> },
+    { labelKey: 'sidebar.findPartner', href: '/find-partner', icon: <Search size={20} /> },
+    { labelKey: 'sidebar.lobbies', href: '/lobbies', icon: <Globe size={20} /> },
+  ];
+
+  const socialNavItems = [
+    { labelKey: 'sidebar.friends', href: '/friends', icon: <UserPlus size={20} />, badge: 3 },
+  ];
+
+  const accountNavItems = [
+    { labelKey: 'sidebar.profile', href: '/profile', icon: <User size={20} /> },
+  ];
+
+  const renderNavItem = (item: { labelKey: string; href: string; icon: React.ReactNode; badge?: number }) => {
     const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+    const label = t(item.labelKey);
 
     return (
       <Link
@@ -82,10 +50,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         href={item.href}
         className={`sidebar-link ${isActive ? 'active' : ''}`}
         onClick={onMobileClose}
-        title={collapsed ? item.label : undefined}
+        title={collapsed ? label : undefined}
       >
         <span className="sidebar-link-icon">{item.icon}</span>
-        <span className="sidebar-link-label">{item.label}</span>
+        <span className="sidebar-link-label">{label}</span>
         {item.badge && item.badge > 0 && (
           <span className="sidebar-link-badge">{item.badge}</span>
         )}
@@ -110,13 +78,13 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
 
         {/* Navigation */}
         <nav className="sidebar-nav">
-          <div className="sidebar-section-title">Main</div>
+          <div className="sidebar-section-title">{t('sidebar.main')}</div>
           {mainNavItems.map(renderNavItem)}
 
-          <div className="sidebar-section-title">Social</div>
+          <div className="sidebar-section-title">{t('sidebar.social')}</div>
           {socialNavItems.map(renderNavItem)}
 
-          <div className="sidebar-section-title">Account</div>
+          <div className="sidebar-section-title">{t('sidebar.account')}</div>
           {accountNavItems.map(renderNavItem)}
         </nav>
 
@@ -124,7 +92,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         <div className="sidebar-footer">
           <button className="sidebar-toggle" onClick={onToggle}>
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-            {!collapsed && <span>Collapse</span>}
+            {!collapsed && <span>{t('sidebar.collapse')}</span>}
           </button>
         </div>
       </aside>

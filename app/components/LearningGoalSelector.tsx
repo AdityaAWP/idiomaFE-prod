@@ -60,7 +60,7 @@ export default function LearningGoalSelector() {
           </div>
           <div>
             <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-              Learning {activeLang.name} <CheckCircle2 className="text-[#E56A45]" size={20} />
+              Learning {activeLang.name} <CheckCircle2 className="text-[#c99614]" size={20} />
             </h3>
             <p className="text-sm text-gray-600 font-medium">Target Level: {lvl?.label}</p>
           </div>
@@ -74,7 +74,7 @@ export default function LearningGoalSelector() {
           </button>
           <Link
             href="/find-partner?from=goal"
-            className="bg-[#E56A45] hover:bg-[#D45934] text-white px-6 py-2.5 rounded-full font-bold shadow-md transition-colors flex items-center gap-2"
+            className="bg-[#c99614] hover:bg-[#a87a10] text-white px-6 py-2.5 rounded-full font-bold shadow-md transition-colors flex items-center gap-2"
           >
             Find a Partner <Play fill="currentColor" size={14} />
           </Link>
@@ -92,7 +92,7 @@ export default function LearningGoalSelector() {
   return (
     <div className="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 mb-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-fadeInUp">
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#E56A45] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-[#FBF4E0] text-[#c99614] flex items-center justify-center">
           <Globe size={20} />
         </div>
         <div>
@@ -126,33 +126,34 @@ export default function LearningGoalSelector() {
               <div
                 key={lang.id}
                 onClick={() => { if (!isActive) setActiveIndex(index); }}
-                className={`absolute w-[240px] md:w-[280px] h-[340px] rounded-[2rem] p-6 cursor-pointer transition-all duration-500 ease-out flex flex-col shadow-xl bg-gradient-to-br ${lang.gradient} text-white ${isActive ? 'z-10 scale-100' : 'z-0 opacity-60'}`}
+                className={`absolute w-[240px] md:w-[280px] h-[340px] rounded-[2rem] cursor-pointer transition-all duration-500 ease-out flex flex-col shadow-xl bg-gradient-to-br ${lang.gradient} text-white overflow-hidden ${isActive ? 'z-10 scale-100' : 'z-0 opacity-60'}`}
                 style={{ transform: `translateX(${visualOffset * 180}px) scale(${isActive ? 1 : 0.85}) ${!isActive ? 'rotateY(' + (visualOffset * -15) + 'deg)' : ''}` }}
               >
+                {/* Full-width flag at top */}
+                {lang.flag && (
+                  <div className="relative w-full h-[120px] flex-shrink-0 overflow-hidden">
+                    <img src={lang.flag} alt={`${lang.country} flag`} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
+                    <div className="absolute top-3 left-3 w-8 h-8 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center text-xs font-bold shadow">{lang.code}</div>
+                  </div>
+                )}
+
                 {/* Watermark */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden rounded-[2rem]">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
                   <span className="text-[140px] font-black opacity-10 select-none tracking-tighter">{lang.code}</span>
                 </div>
 
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className="flex justify-between items-start mb-auto">
-                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-xs font-bold">{lang.code}</div>
-                    {lang.flag && (
-                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 shadow-md">
-                        <img src={lang.flag} alt={`${lang.country} flag`} className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={`transition-all duration-300 ${isActive && showLevels ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
+                <div className="relative z-10 flex flex-col h-full p-5 pt-3">
+                  <div className="flex flex-col h-full">
+                  <div className={`mb-auto transition-all duration-300 ${isActive && showLevels ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
                     <p className="text-[10px] font-bold tracking-[0.2em] opacity-80 uppercase mb-1">{lang.country}</p>
-                    <h3 className="text-4xl font-extrabold tracking-tight">{lang.name}</h3>
+                    <h3 className="text-3xl font-extrabold tracking-tight">{lang.name}</h3>
                   </div>
 
                   {isActive && !showLevels && (
                     <button
                       onClick={e => { e.stopPropagation(); setShowLevels(true); }}
-                      className="mt-6 w-full py-3.5 rounded-full bg-[#E56A45] hover:bg-[#D45934] text-white font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
+                      className="mt-6 w-full py-3.5 rounded-full bg-[#c99614] hover:bg-[#a87a10] text-white font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
                     >
                       <GraduationCap size={18} /> Choose level
                     </button>
@@ -168,7 +169,7 @@ export default function LearningGoalSelector() {
                             key={lv.value}
                             onClick={e => { e.stopPropagation(); setSelectedLevel(lv.value); }}
                             className={`p-3 rounded-xl text-left transition-all ${selectedLevel === lv.value
-                                ? 'bg-[#E56A45] text-white shadow-md'
+                                ? 'bg-[#c99614] text-white shadow-md'
                                 : 'bg-white/20 hover:bg-white/30 text-white'
                               }`}
                           >
@@ -187,13 +188,14 @@ export default function LearningGoalSelector() {
                         <button
                           onClick={e => { e.stopPropagation(); handleSave(); }}
                           disabled={!selectedLevel}
-                          className="flex-1 py-3 rounded-full bg-[#E56A45] disabled:opacity-50 text-white font-bold text-sm transition-colors"
+                          className="flex-1 py-3 rounded-full bg-[#c99614] disabled:opacity-50 text-white font-bold text-sm transition-colors"
                         >
                           Confirm →
                         </button>
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
             );
@@ -203,7 +205,7 @@ export default function LearningGoalSelector() {
         {/* Pagination Dots */}
         <div className="absolute bottom-4 flex gap-2">
           {LANGUAGES.map((_, i) => (
-            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${activeIndex === i ? 'w-6 bg-[#E56A45]' : 'w-1.5 bg-gray-300'}`} />
+            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${activeIndex === i ? 'w-6 bg-[#c99614]' : 'w-1.5 bg-gray-300'}`} />
           ))}
         </div>
       </div>

@@ -20,6 +20,8 @@ const LANGUAGES = [
   { code: 'Korean',     flag: '🇰🇷', label: 'Korean' },
   { code: 'French',     flag: '🇫🇷', label: 'French' },
   { code: 'Mandarin',   flag: '🇨🇳', label: 'Mandarin' },
+  { code: 'Russian',    flag: '🇷🇺', label: 'Russian' },
+  { code: 'Arabic',     flag: '🇸🇦', label: 'Arabic' },
 ];
 
 const LEVELS = [
@@ -39,6 +41,8 @@ const PARTNER_POOL = [
   { name: 'Kenji M.',  flag: '🇯🇵', native: 'Japanese (Native)', topics: ['Anime & Manga', 'Casual English', 'Kyoto Travel'] },
   { name: 'Maria G.',  flag: '🇪🇸', native: 'Spanish (Native)',  topics: ['Spanish Food', 'Latin Music', 'Grammar Tips'] },
   { name: 'Lin W.',    flag: '🇨🇳', native: 'Mandarin (Native)', topics: ['Business Talk', 'Travel Plans', 'Movie Reviews'] },
+  { name: 'Dmitry I.', flag: '🇷🇺', native: 'Russian (Native)', topics: ['Russian Literature', 'Cold Weather', 'Chess'] },
+  { name: 'Fahad A.',  flag: '🇸🇦', native: 'Arabic (Native)', topics: ['Arabic Coffee', 'Desert Camping', 'Technology'] },
 ];
 
 // ─── Page component ───────────────────────────────────────────────────────────
@@ -91,18 +95,18 @@ function FindPartnerContent() {
     if (e.key === 'Enter') { e.preventDefault(); addTopic(currentInput); }
   };
 
-  const canSearch = topics.length >= 3;
+  const canSearch = topics.length >= 1;
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-120px)]">
-      <div className="page-header animate-fadeInUp shrink-0">
+    <div className="flex flex-col min-h-[calc(100vh-120px)] items-center">
+      <div className="page-header animate-fadeInUp shrink-0 w-full max-w-2xl text-center">
         <h1>Find a Partner</h1>
         <p>Match with a native speaker for a 1-on-1 video conversation</p>
       </div>
 
-      <div className="flex-1 flex items-start justify-center pt-8 pb-16">
+      <div className="flex-1 flex items-start justify-center pb-16 w-full">
         <div className="w-full max-w-2xl animate-fadeInUp delay-100">
           <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden relative min-h-[520px] flex flex-col w-full">
 
@@ -114,7 +118,7 @@ function FindPartnerContent() {
                 {setupStep === 'language-level' && (
                   <>
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#c99614] to-[#c99614] text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
                       <div>
                         <h2 className="text-lg font-bold text-gray-900 leading-tight">Select Language & Level</h2>
                         <p className="text-sm text-gray-500">Choose what you're practising and your current ability.</p>
@@ -125,7 +129,7 @@ function FindPartnerContent() {
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                       <Globe size={12} /> Practising Language
                     </p>
-                    <div className="grid grid-cols-3 gap-2 mb-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
                       {LANGUAGES.map(lang => {
                         const active = partner.language === lang.code;
                         return (
@@ -134,8 +138,8 @@ function FindPartnerContent() {
                             onClick={() => partner.setLanguage(lang.code)}
                             className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
                               active
-                                ? 'bg-black text-white border-black shadow-sm'
-                                : 'bg-white border-gray-200 text-gray-700 hover:border-gray-400'
+                                ? 'bg-gradient-to-r from-[#c99614] to-[#c99614] text-white border-transparent shadow-md shadow-[#c99614]/20'
+                                : 'bg-white border-gray-200 text-gray-700 hover:border-[#c99614] hover:text-[#c99614]'
                             }`}
                           >
                             <span className="text-xl">{lang.flag}</span>
@@ -159,8 +163,8 @@ function FindPartnerContent() {
                             onClick={() => partner.setLevel(lv.code)}
                             className={`flex items-center gap-4 px-4 py-3.5 rounded-xl border text-left transition-all ${
                               active
-                                ? 'bg-black text-white border-black shadow-sm'
-                                : 'bg-white border-gray-200 hover:border-gray-400'
+                                ? 'bg-gradient-to-r from-[#c99614] to-[#c99614] text-white border-transparent shadow-md shadow-[#c99614]/20'
+                                : 'bg-white border-gray-200 hover:border-[#c99614]'
                             }`}
                           >
                             <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
@@ -180,7 +184,7 @@ function FindPartnerContent() {
 
                     <button
                       onClick={() => setSetupStep('topics')}
-                      className="w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 bg-black hover:bg-gray-800 text-white shadow-sm transition-all"
+                      className="w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 bg-gradient-to-r from-[#c99614] to-[#c99614] hover:from-[#a87a10] hover:to-[#a87a10] text-white shadow-md shadow-[#c99614]/25 hover:shadow-lg hover:shadow-[#c99614]/35 transition-all"
                     >
                       Next — Add Topics <ChevronRight size={18} />
                     </button>
@@ -200,10 +204,10 @@ function FindPartnerContent() {
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
                         </button>
                       )}
-                      <div className={`w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold shrink-0 ${fromGoal ? '' : ''}`}>{ fromGoal ? '2' : '2'}</div>
+                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-[#c99614] to-[#c99614] text-white flex items-center justify-center text-sm font-bold shrink-0 ${fromGoal ? '' : ''}`}>{ fromGoal ? '2' : '2'}</div>
                       <div>
                         <h2 className="text-lg font-bold text-gray-900 leading-tight">Add Conversation Topics</h2>
-                        <p className="text-sm text-gray-500">Add at least <strong>3 prompts</strong> to start searching.</p>
+                        <p className="text-sm text-gray-500">Add at least <strong>1 prompt</strong> to start searching.</p>
                       </div>
                     </div>
 
@@ -263,7 +267,7 @@ function FindPartnerContent() {
                         </div>
                         <input
                           type="text"
-                          className="w-full bg-white border border-gray-200 rounded-lg pl-11 pr-4 py-3 focus:ring-1 focus:ring-black focus:border-black transition-all text-sm text-gray-900 focus:outline-none shadow-sm"
+                          className="w-full bg-white border border-gray-200 rounded-lg pl-11 pr-4 py-3 focus:ring-1 focus:ring-[#c99614] focus:border-[#c99614] transition-all text-sm text-gray-900 focus:outline-none shadow-sm"
                           placeholder="e.g. Traditional foods, movies, hobbies..."
                           value={currentInput}
                           onChange={e => setCurrentInput(e.target.value)}
@@ -284,10 +288,9 @@ function FindPartnerContent() {
                       </button>
                     </div>
 
-                    {/* Counter + warning */}
                     <div className="flex justify-between items-center text-[13px] px-1 mb-5">
-                      <span className={topics.length < 3 ? 'text-orange-500 font-medium' : 'text-gray-400'}>
-                        {topics.length < 3 ? `Add ${3 - topics.length} more to continue` : topics.length >= 5 ? 'Maximum reached' : 'Press Enter to add'}
+                      <span className={topics.length < 1 ? 'text-[#FBF4E0]0 font-medium' : 'text-gray-400'}>
+                        {topics.length < 1 ? `Add 1 more to continue` : topics.length >= 5 ? 'Maximum reached' : 'Press Enter to add'}
                       </span>
                       <span className="text-gray-400">{topics.length} / 5</span>
                     </div>
@@ -297,8 +300,8 @@ function FindPartnerContent() {
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
-                          width: `${Math.min((topics.length / 3) * 100, 100)}%`,
-                          background: topics.length >= 3 ? '#10b981' : '#f59e0b',
+                          width: `${Math.min((topics.length / 5) * 100, 100)}%`,
+                          background: topics.length >= 1 ? '#10b981' : '#f59e0b',
                         }}
                       />
                     </div>
@@ -333,15 +336,15 @@ function FindPartnerContent() {
                       <button
                         onClick={() => { if (canSearch) setMatchState('searching'); }}
                         disabled={!canSearch}
-                        title={!canSearch ? 'Add at least 3 topics to search' : ''}
+                        title={!canSearch ? 'Add at least 1 topic to search' : ''}
                         className={`w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all ${
                           canSearch
-                            ? 'bg-black hover:bg-gray-800 text-white shadow-sm'
+                            ? 'bg-gradient-to-r from-[#c99614] to-[#c99614] hover:from-[#a87a10] hover:to-[#a87a10] text-white shadow-md shadow-[#c99614]/25'
                             : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100'
                         }`}
                       >
                         <Search size={18} />
-                        {canSearch ? 'Find Partner' : `Add ${3 - topics.length} more topic${3 - topics.length !== 1 ? 's' : ''}`}
+                        {canSearch ? 'Find Partner' : `Add 1 more topic`}
                       </button>
                     </div>
                   </>
@@ -356,7 +359,7 @@ function FindPartnerContent() {
                   <div className="absolute inset-0 rounded-full border border-gray-300 opacity-20 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
                   <div className="absolute inset-4 rounded-full border border-gray-400 opacity-30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" style={{ animationDelay: '400ms' }}></div>
                   <div className="absolute inset-8 rounded-full border border-gray-500 opacity-40 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" style={{ animationDelay: '800ms' }}></div>
-                  <div className="relative z-10 w-16 h-16 rounded-lg bg-black shadow-lg flex items-center justify-center text-white border border-gray-800">
+                  <div className="relative z-10 w-16 h-16 rounded-lg bg-gradient-to-br from-[#c99614] to-[#c99614] shadow-lg flex items-center justify-center text-white">
                     <MapPin size={28} />
                   </div>
                 </div>
@@ -377,7 +380,7 @@ function FindPartnerContent() {
             {/* ── STATE 3: FOUND ── */}
             {matchState === 'found' && (
               <div className="flex-1 flex flex-col justify-center animate-fadeIn">
-                <div className="absolute top-0 left-0 w-full h-32 bg-gray-900"></div>
+                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-[#c99614] to-[#c99614]"></div>
                 <div className="px-8 pb-8 pt-16 relative z-10 text-center flex-1 flex flex-col">
                   <div className="w-24 h-24 mx-auto bg-white p-1 rounded-full shadow-md mb-4 border border-gray-200">
                     <div className="w-full h-full bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
@@ -385,7 +388,7 @@ function FindPartnerContent() {
                     </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-1.5 bg-gray-800 text-white px-3 py-1 rounded font-medium text-xs mx-auto mb-3 tracking-wide shadow-sm">
+                  <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#c99614] to-[#c99614] text-white px-3 py-1 rounded font-medium text-xs mx-auto mb-3 tracking-wide shadow-sm">
                     <Sparkles size={12} /> Match Found
                   </div>
 
@@ -437,7 +440,7 @@ export default function FindPartnerPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-6 h-6 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#c99614] border-t-transparent rounded-full animate-spin" />
       </div>
     }>
       <FindPartnerContent />
