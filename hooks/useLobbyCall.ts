@@ -196,7 +196,7 @@ export function useLobbyCall(lobbyId: string) {
         // Play local video
         const containers = document.querySelectorAll('[data-lobby-video="local"]');
         containers.forEach(el => {
-          try { camTrack.play(el); } catch {}
+          try { camTrack.play(el as HTMLElement); } catch {}
         });
 
         // Volume check
