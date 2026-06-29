@@ -119,7 +119,7 @@ export function useAgoraCall() {
       clientRef.current = client;
 
       // ── Register event handlers BEFORE joining ──
-      client.on('user-published', async (user: any, mediaType: string) => {
+      client.on('user-published', async (user: any, mediaType: 'audio' | 'video' | 'datachannel') => {
         if (cancelled) return;
         await client.subscribe(user, mediaType);
         if (cancelled) return;
