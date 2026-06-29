@@ -176,7 +176,7 @@ export function useLobbyCall(lobbyId: string) {
           ? { cameraId: realCam.deviceId }
           : devices[0]?.deviceId
             ? { cameraId: devices[0].deviceId }
-            : { facingMode: 'user' };
+            : { facingMode: 'user' as const };
 
         const [micTrack, camTrack] = await Promise.all([
           AgoraRTC.createMicrophoneAudioTrack(),
