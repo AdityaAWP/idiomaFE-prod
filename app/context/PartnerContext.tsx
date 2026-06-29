@@ -11,16 +11,18 @@ export interface PartnerData {
   myTopics: string[];
 
   // Populated when a match is found
+  partnerId: string | null;
   partnerTopics: string[];
   partnerName: string;
   partnerFlag: string;
   partnerNative: string;
+  partnerAvatar: string | null;
 
   // Setters
   setLanguage: (v: string) => void;
   setLevel: (v: string) => void;
   setMyTopics: (v: string[]) => void;
-  setPartnerInfo: (topics: string[], name: string, flag: string, native: string) => void;
+  setPartnerInfo: (id: string, topics: string[], name: string, flag: string, native: string, avatar?: string | null) => void;
 }
 
 const PartnerContext = createContext<PartnerData | null>(null);
@@ -28,13 +30,15 @@ const PartnerContext = createContext<PartnerData | null>(null);
 // ─── Provider ────────────────────────────────────────────────────────────────
 
 export function PartnerProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<string>('English');
+  const [language, setLanguageState] = useState<string>('ENGLISH');
   const [level, setLevelState] = useState<string>('Beginner');
   const [myTopics, setMyTopicsState] = useState<string[]>([]);
+  const [partnerId, setPartnerId] = useState<string | null>(null);
   const [partnerTopics, setPartnerTopics] = useState<string[]>([]);
   const [partnerName, setPartnerName] = useState('Kenji M.');
   const [partnerFlag, setPartnerFlag] = useState('🇯🇵');
   const [partnerNative, setPartnerNative] = useState('Japanese (Native)');
+  const [partnerAvatar, setPartnerAvatar] = useState<string | null>(null);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -48,7 +52,9 @@ export function PartnerProvider({ children }: { children: ReactNode }) {
         if (parsed.partnerTopics) setPartnerTopics(parsed.partnerTopics);
         if (parsed.partnerName) setPartnerName(parsed.partnerName);
         if (parsed.partnerFlag) setPartnerFlag(parsed.partnerFlag);
+        if (parsed.partnerId) setPartnerId(parsed.partnerId);
         if (parsed.partnerNative) setPartnerNative(parsed.partnerNative);
+        if (parsed.partnerAvatar) setPartnerAvatar(parsed.partnerAvatar);
       } catch { /* ignore */ }
     }
   }, []);
@@ -63,17 +69,19 @@ export function PartnerProvider({ children }: { children: ReactNode }) {
   const setLanguage = (v: string) => { setLanguageState(v); persist({ language: v }); };
   const setLevel = (v: string) => { setLevelState(v); persist({ level: v }); };
   const setMyTopics = (v: string[]) => { setMyTopicsState(v); persist({ myTopics: v }); };
-  const setPartnerInfo = (topics: string[], name: string, flag: string, native: string) => {
+  const setPartnerInfo = (id: string, topics: string[], name: string, flag: string, native: string, avatar?: string | null) => {
+    setPartnerId(id);
     setPartnerTopics(topics);
     setPartnerName(name);
     setPartnerFlag(flag);
     setPartnerNative(native);
-    persist({ partnerTopics: topics, partnerName: name, partnerFlag: flag, partnerNative: native });
+    if (avatar !== undefined) setPartnerAvatar(avatar);
+    persist({ partnerId: id, partnerTopics: topics, partnerName: name, partnerFlag: flag, partnerNative: native, partnerAvatar: avatar });
   };
 
   return (
     <PartnerContext.Provider value={{
-      language, level, myTopics, partnerTopics, partnerName, partnerFlag, partnerNative,
+      language, level, myTopics, partnerId, partnerTopics, partnerName, partnerFlag, partnerNative, partnerAvatar,
       setLanguage, setLevel, setMyTopics, setPartnerInfo,
     }}>
       {children}

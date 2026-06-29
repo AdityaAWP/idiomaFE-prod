@@ -3,30 +3,34 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertTriangle } from 'lucide-react';
+import { useAuth } from '@/app/context/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
-    // Simulate login
-    await new Promise((r) => setTimeout(r, 1200));
-    setIsLoading(false);
-    router.push('/dashboard');
+    try {
+      await login(email, password);
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.message ?? 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    // Simulate Google sign-in
-    await new Promise((r) => setTimeout(r, 1200));
-    setIsLoading(false);
-    router.push('/onboarding');
+  const handleGoogleSignIn = () => {
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api'}/auth/google`;
   };
 
   return (
@@ -65,6 +69,13 @@ export default function LoginPage() {
             </span>
           </div>
         </div>
+
+        {error && (
+          <div className="flex items-center gap-2 bg-red-50 text-red-700 text-sm px-3 py-2 rounded-md border border-red-200">
+            <AlertTriangle size={16} />
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>

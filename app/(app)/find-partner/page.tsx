@@ -1,33 +1,34 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import {
   Search, MapPin, Video, X, Plus, MessageSquare,
   Sparkles, Globe, BarChart2, ChevronRight, Check
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/app/context/AuthContext';
 import { usePartner } from '../../context/PartnerContext';
+import { match as matchApi, users as usersApi, getFullImageUrl } from '@/lib/api';
+import { useMatchWebSocket, MatchFoundPayload } from '@/hooks/useMatchWebSocket';
 
 type MatchState = 'idle' | 'searching' | 'found';
 type SetupStep = 'language-level' | 'topics';
 
-// ─── Static data ─────────────────────────────────────────────────────────────
-
 const LANGUAGES = [
-  { code: 'English',    flag: '🇺🇸', label: 'English' },
-  { code: 'Japanese',   flag: '🇯🇵', label: 'Japanese' },
-  { code: 'Spanish',    flag: '🇪🇸', label: 'Spanish' },
-  { code: 'Korean',     flag: '🇰🇷', label: 'Korean' },
-  { code: 'French',     flag: '🇫🇷', label: 'French' },
-  { code: 'Mandarin',   flag: '🇨🇳', label: 'Mandarin' },
-  { code: 'Russian',    flag: '🇷🇺', label: 'Russian' },
-  { code: 'Arabic',     flag: '🇸🇦', label: 'Arabic' },
+  { code: 'ENGLISH',   flag: '🇬🇧', label: 'English' },
+  { code: 'JAPANESE',  flag: '🇯🇵', label: 'Japanese' },
+  { code: 'SPANISH',   flag: '🇪🇸', label: 'Spanish' },
+  { code: 'KOREAN',    flag: '🇰🇷', label: 'Korean' },
+  { code: 'FRENCH',    flag: '🇫🇷', label: 'French' },
+  { code: 'MANDARIN',  flag: '🇨🇳', label: 'Mandarin' },
+  { code: 'RUSSIAN',   flag: '🇷🇺', label: 'Russian' },
+  { code: 'ARABIC',    flag: '🇸🇦', label: 'Arabic' },
 ];
 
 const LEVELS = [
-  { code: 'Beginner',     label: 'Beginner',     desc: 'Just starting out' },
-  { code: 'Intermediate', label: 'Intermediate', desc: 'Can hold basic conversations' },
-  { code: 'Advanced',     label: 'Advanced',     desc: 'Near-fluent speaker' },
+  { code: 'BEGINNER',     label: 'Beginner',     desc: 'Just starting out' },
+  { code: 'INTERMEDIATE', label: 'Intermediate', desc: 'Can hold basic conversations' },
+  { code: 'ADVANCED',     label: 'Advanced',     desc: 'Near-fluent speaker' },
 ];
 
 const QUICK_IDEAS = [
@@ -36,50 +37,87 @@ const QUICK_IDEAS = [
   'Favourite music', 'Weekend plans',
 ];
 
-// Simulated partners pool
-const PARTNER_POOL = [
-  { name: 'Kenji M.',  flag: '🇯🇵', native: 'Japanese (Native)', topics: ['Anime & Manga', 'Casual English', 'Kyoto Travel'] },
-  { name: 'Maria G.',  flag: '🇪🇸', native: 'Spanish (Native)',  topics: ['Spanish Food', 'Latin Music', 'Grammar Tips'] },
-  { name: 'Lin W.',    flag: '🇨🇳', native: 'Mandarin (Native)', topics: ['Business Talk', 'Travel Plans', 'Movie Reviews'] },
-  { name: 'Dmitry I.', flag: '🇷🇺', native: 'Russian (Native)', topics: ['Russian Literature', 'Cold Weather', 'Chess'] },
-  { name: 'Fahad A.',  flag: '🇸🇦', native: 'Arabic (Native)', topics: ['Arabic Coffee', 'Desert Camping', 'Technology'] },
-];
-
-// ─── Page component ───────────────────────────────────────────────────────────
-
 function FindPartnerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const partner = usePartner();
+  const { user } = useAuth();
+  const ws = useMatchWebSocket();
 
   const fromGoal = searchParams.get('from') === 'goal';
 
-  const [matchState, setMatchState]   = useState<MatchState>('idle');
-  // If arriving from the goal selector, skip language/level step
-  const [setupStep, setSetupStep]     = useState<SetupStep>(
+  const [matchState, setMatchState] = useState<MatchState>('idle');
+  const [setupStep, setSetupStep] = useState<SetupStep>(
     fromGoal && partner.language ? 'topics' : 'language-level'
   );
-  const [topics, setTopics]           = useState<string[]>(partner.myTopics ?? []);
+  const [topics, setTopics] = useState<string[]>(partner.myTopics ?? []);
   const [currentInput, setCurrentInput] = useState('');
+  const [error, setError] = useState('');
 
-  // Sync local topics → context on change
   useEffect(() => { partner.setMyTopics(topics); }, [topics]);  // eslint-disable-line
 
-  // Also re-check on mount in case context hydrated after render
   useEffect(() => {
     if (fromGoal && partner.language) setSetupStep('topics');
   }, [partner.language, fromGoal]);  // eslint-disable-line
 
-  // Auto-advance to found state
+  // Handle match found from WebSocket
   useEffect(() => {
-    if (matchState !== 'searching') return;
-    const t = setTimeout(() => {
-      const p = PARTNER_POOL[Math.floor(Math.random() * PARTNER_POOL.length)];
-      partner.setPartnerInfo(p.topics, p.name, p.flag, p.native);
-      setMatchState('found');
-    }, 3500);
-    return () => clearTimeout(t);
-  }, [matchState]);  // eslint-disable-line
+    if (ws.matchFound) {
+      handleMatchFound(ws.matchFound);
+    }
+  }, [ws.matchFound]); // eslint-disable-line
+
+  // Redirect to onboarding if no language set
+  useEffect(() => {
+    if (user && !user.targetLanguage && !fromGoal) {
+      router.replace('/onboarding');
+    }
+  }, [user, fromGoal, router]);
+
+  // Sync partner language/level from user profile on first load
+  useEffect(() => {
+    if (user?.targetLanguage && !fromGoal) {
+      partner.setLanguage(user.targetLanguage);
+    }
+    if (user?.proficiency && !fromGoal) {
+      partner.setLevel(user.proficiency.toUpperCase());
+    }
+  }, []); // eslint-disable-line
+
+  const handleMatchFound = useCallback(async (payload: MatchFoundPayload) => {
+    // Determine which user we are (user1 or user2)
+    const isUser1 = payload.user1Id === user?.id;
+    const partnerUserId = isUser1 ? payload.user2Id : payload.user1Id;
+
+    // Fetch partner's profile for name and avatar
+    let partnerName = 'Partner';
+    let partnerAvatar: string | null = null;
+    try {
+      const profile = await usersApi.findById(partnerUserId);
+      partnerName = profile.username;
+      partnerAvatar = profile.avatarUrl;
+    } catch { /* use defaults */ }
+
+    partner.setPartnerInfo(
+      partnerUserId,
+      payload.partnerTopics,
+      partnerName,
+      '🌍',
+      'Native Speaker',
+      partnerAvatar,
+    );
+    partner.setMyTopics(payload.myTopics);
+
+    // Store channel name and tokens for the room
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('current_room', JSON.stringify({
+        channelName: payload.channelName,
+        token: payload.token,
+      }));
+    }
+
+    setMatchState('found');
+  }, [user?.id, partner]);
 
   const addTopic = (topic: string) => {
     const trimmed = topic.trim();
@@ -95,9 +133,61 @@ function FindPartnerContent() {
     if (e.key === 'Enter') { e.preventDefault(); addTopic(currentInput); }
   };
 
-  const canSearch = topics.length >= 1;
+  const handleStartSearching = async () => {
+    if (topics.length < 1) return;
+    setError('');
+    setMatchState('searching');
+    const connected = await ws.connect(partner.level.toLowerCase());
+    if (!connected) {
+      setError('Failed to connect to matchmaking');
+      setMatchState('idle');
+      return;
+    }
+    // Allow time for the notification server to register our WebSocket
+    await new Promise((r) => setTimeout(r, 600));
+    try {
+      await matchApi.join({
+        level: partner.level.toLowerCase(),
+        topics,
+      });
+    } catch (err: any) {
+      setError(err.message ?? 'Failed to join matchmaking queue');
+      ws.disconnect();
+      setMatchState('idle');
+    }
+  };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  const handleSkip = async () => {
+    // Decline current match and restart search
+    try {
+      await matchApi.cancel({ level: partner.level.toLowerCase() });
+    } catch { /* ignore */ }
+    setMatchState('searching');
+    // Re-join queue (WS is still connected)
+    await new Promise((r) => setTimeout(r, 600));
+    try {
+      await matchApi.join({ level: partner.level.toLowerCase(), topics });
+    } catch (err: any) {
+      setError(err.message ?? 'Failed to re-join queue');
+      setMatchState('idle');
+      setSetupStep('topics');
+    }
+  };
+
+  const handleCancelSearch = async () => {
+    try {
+      await matchApi.cancel({ level: partner.level.toLowerCase() });
+    } catch { /* ignore */ }
+    ws.disconnect();
+    setMatchState('idle');
+    setSetupStep('topics');
+  };
+
+  const handleJoinCall = () => {
+    router.push('/room');
+  };
+
+  const canSearch = topics.length >= 1;
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-120px)] items-center">
@@ -118,14 +208,13 @@ function FindPartnerContent() {
                 {setupStep === 'language-level' && (
                   <>
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffba09] to-[#ffba09] text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
+                      <div className="w-8 h-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center text-sm font-bold shrink-0">1</div>
                       <div>
                         <h2 className="text-lg font-bold text-gray-900 leading-tight">Select Language & Level</h2>
-                        <p className="text-sm text-gray-500">Choose what you're practising and your current ability.</p>
+                        <p className="text-sm text-gray-500">Choose what you&rsquo;re practising and your current ability.</p>
                       </div>
                     </div>
 
-                    {/* Language selector */}
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                       <Globe size={12} /> Practising Language
                     </p>
@@ -138,8 +227,8 @@ function FindPartnerContent() {
                             onClick={() => partner.setLanguage(lang.code)}
                             className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
                               active
-                                ? 'bg-gradient-to-r from-[#ffba09] to-[#ffba09] text-white border-transparent shadow-md shadow-[#ffba09]/20'
-                                : 'bg-white border-gray-200 text-gray-700 hover:border-[#ffba09] hover:text-[#ffba09]'
+                                ? 'bg-[var(--accent)] text-white border-transparent shadow-md'
+                                : 'bg-white border-gray-200 text-gray-700 hover:border-[var(--accent)] hover:text-[var(--accent)]'
                             }`}
                           >
                             <span className="text-xl">{lang.flag}</span>
@@ -150,7 +239,6 @@ function FindPartnerContent() {
                       })}
                     </div>
 
-                    {/* Level selector */}
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                       <BarChart2 size={12} /> Proficiency Level
                     </p>
@@ -163,13 +251,11 @@ function FindPartnerContent() {
                             onClick={() => partner.setLevel(lv.code)}
                             className={`flex items-center gap-4 px-4 py-3.5 rounded-xl border text-left transition-all ${
                               active
-                                ? 'bg-gradient-to-r from-[#ffba09] to-[#ffba09] text-white border-transparent shadow-md shadow-[#ffba09]/20'
-                                : 'bg-white border-gray-200 hover:border-[#ffba09]'
+                                ? 'bg-[var(--accent)] text-white border-transparent shadow-md'
+                                : 'bg-white border-gray-200 hover:border-[var(--accent)]'
                             }`}
                           >
-                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                              active ? 'border-white' : 'border-gray-400'
-                            }`}>
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${active ? 'border-white' : 'border-gray-400'}`}>
                               {active && <div className="w-2 h-2 rounded-full bg-white" />}
                             </div>
                             <div>
@@ -184,7 +270,7 @@ function FindPartnerContent() {
 
                     <button
                       onClick={() => setSetupStep('topics')}
-                      className="w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 bg-gradient-to-r from-[#ffba09] to-[#ffba09] hover:from-[#e5a500] hover:to-[#e5a500] text-white shadow-md shadow-[#ffba09]/25 hover:shadow-lg hover:shadow-[#ffba09]/35 transition-all"
+                      className="w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 bg-[var(--accent)] hover:opacity-90 text-white shadow-md transition-all"
                     >
                       Next — Add Topics <ChevronRight size={18} />
                     </button>
@@ -194,49 +280,57 @@ function FindPartnerContent() {
                 {/* STEP B: Topics */}
                 {setupStep === 'topics' && (
                   <>
-                    {/* Step header with back (only show back if NOT from goal) */}
                     <div className="flex items-center gap-3 mb-6">
                       {!fromGoal && (
-                        <button
-                          onClick={() => setSetupStep('language-level')}
-                          className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors shrink-0"
-                        >
+                        <button onClick={() => setSetupStep('language-level')} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors shrink-0">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
                         </button>
                       )}
-                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-[#ffba09] to-[#ffba09] text-white flex items-center justify-center text-sm font-bold shrink-0 ${fromGoal ? '' : ''}`}>{ fromGoal ? '2' : '2'}</div>
+                      <div className="w-8 h-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center text-sm font-bold shrink-0">2</div>
                       <div>
                         <h2 className="text-lg font-bold text-gray-900 leading-tight">Add Conversation Topics</h2>
                         <p className="text-sm text-gray-500">Add at least <strong>1 prompt</strong> to start searching.</p>
                       </div>
                     </div>
 
-                    {/* Language & level badge — read-only when from goal, editable otherwise */}
-                    <div className="flex items-center gap-2 mb-5 flex-wrap">
-                      <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-                        <Globe size={11} /> {partner.language}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-                        <BarChart2 size={11} /> {partner.level}
-                      </span>
-                      {fromGoal ? (
-                        <button
-                          onClick={() => router.push('/dashboard')}
-                          className="text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition-colors"
-                        >
-                          Change goal
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setSetupStep('language-level')}
-                          className="text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition-colors"
-                        >
-                          Change
-                        </button>
-                      )}
+                    <div className="mb-5">
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                          <Globe size={11} /> {partner.language}
+                        </span>
+                        {fromGoal ? (
+                          <button onClick={() => router.push('/dashboard')} className="text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition-colors">
+                            Change language
+                          </button>
+                        ) : (
+                          <button onClick={() => setSetupStep('language-level')} className="text-xs text-gray-400 hover:text-gray-700 underline underline-offset-2 transition-colors">
+                            Change language
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <BarChart2 size={11} /> Your Proficiency Level
+                      </p>
+                      <div className="flex gap-2 flex-wrap">
+                        {LEVELS.map(lv => {
+                          const active = partner.level === lv.code;
+                          return (
+                            <button
+                              key={lv.code}
+                              onClick={() => partner.setLevel(lv.code)}
+                              className={`flex-1 min-w-[90px] flex flex-col items-start px-3 py-2.5 rounded-xl border text-left transition-all ${
+                                active ? 'bg-[var(--accent)] text-white border-transparent shadow-md' : 'bg-white border-gray-200 text-gray-700 hover:border-[var(--accent)] hover:text-[var(--accent)]'
+                              }`}
+                            >
+                              <span className={`text-sm font-bold leading-tight ${active ? 'text-white' : 'text-gray-800'}`}>{lv.label}</span>
+                              <span className={`text-[11px] mt-0.5 ${active ? 'text-white/75' : 'text-gray-400'}`}>{lv.desc}</span>
+                              {active && <Check size={12} className="mt-1 text-white" />}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    {/* Topic cards grid */}
                     <div className="grid grid-cols-2 gap-3 mb-4 min-h-[120px]">
                       {topics.length === 0 && (
                         <div className="col-span-full flex flex-col items-center justify-center border-[1.5px] border-dashed border-gray-200 rounded-xl p-8 text-sm text-gray-500 italic bg-white">
@@ -259,7 +353,6 @@ function FindPartnerContent() {
                       ))}
                     </div>
 
-                    {/* Input row */}
                     <div className="flex gap-2 mb-2">
                       <div className="relative flex-1">
                         <div className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-400">
@@ -267,7 +360,7 @@ function FindPartnerContent() {
                         </div>
                         <input
                           type="text"
-                          className="w-full bg-white border border-gray-200 rounded-lg pl-11 pr-4 py-3 focus:ring-1 focus:ring-[#ffba09] focus:border-[#ffba09] transition-all text-sm text-gray-900 focus:outline-none shadow-sm"
+                          className="w-full bg-white border border-gray-200 rounded-lg pl-11 pr-4 py-3 focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)] transition-all text-sm text-gray-900 focus:outline-none shadow-sm"
                           placeholder="e.g. Traditional foods, movies, hobbies..."
                           value={currentInput}
                           onChange={e => setCurrentInput(e.target.value)}
@@ -278,35 +371,23 @@ function FindPartnerContent() {
                       <button
                         onClick={() => addTopic(currentInput)}
                         disabled={topics.length >= 5 || !currentInput.trim()}
-                        className={`px-5 rounded-lg text-sm font-medium transition-colors border shadow-sm ${
-                          topics.length >= 5 || !currentInput.trim()
-                            ? 'border-gray-200 text-gray-400 bg-white cursor-not-allowed'
-                            : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-                        }`}
+                        className={`px-5 rounded-lg text-sm font-medium transition-colors border shadow-sm ${topics.length >= 5 || !currentInput.trim() ? 'border-gray-200 text-gray-400 bg-white cursor-not-allowed' : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'}`}
                       >
                         Add
                       </button>
                     </div>
 
                     <div className="flex justify-between items-center text-[13px] px-1 mb-5">
-                      <span className={topics.length < 1 ? 'text-[#FFF8DC]0 font-medium' : 'text-gray-400'}>
-                        {topics.length < 1 ? `Add 1 more to continue` : topics.length >= 5 ? 'Maximum reached' : 'Press Enter to add'}
+                      <span className={topics.length < 1 ? 'text-orange-500 font-medium' : 'text-gray-400'}>
+                        {topics.length < 1 ? 'Add 1 more to continue' : topics.length >= 5 ? 'Maximum reached' : 'Press Enter to add'}
                       </span>
                       <span className="text-gray-400">{topics.length} / 5</span>
                     </div>
 
-                    {/* Progress bar */}
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-5">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.min((topics.length / 5) * 100, 100)}%`,
-                          background: topics.length >= 1 ? '#10b981' : '#f59e0b',
-                        }}
-                      />
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min((topics.length / 5) * 100, 100)}%`, background: topics.length >= 1 ? '#10b981' : '#f59e0b' }} />
                     </div>
 
-                    {/* Quick ideas */}
                     <div className="mb-8">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">
                         <Sparkles size={14} className="text-orange-400" /> Quick Ideas
@@ -315,16 +396,8 @@ function FindPartnerContent() {
                         {QUICK_IDEAS.map(idea => {
                           const isAdded = topics.includes(idea) || topics.length >= 5;
                           return (
-                            <button
-                              key={idea}
-                              onClick={() => addTopic(idea)}
-                              disabled={isAdded}
-                              className={`text-sm px-4 py-2 rounded-full transition-colors shadow-sm border flex items-center gap-1.5 ${
-                                isAdded
-                                  ? 'bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed'
-                                  : 'bg-white border-gray-200 hover:border-gray-300 text-gray-700'
-                              }`}
-                            >
+                            <button key={idea} onClick={() => addTopic(idea)} disabled={isAdded}
+                              className={`text-sm px-4 py-2 rounded-full transition-colors shadow-sm border flex items-center gap-1.5 ${isAdded ? 'bg-gray-50 border-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border-gray-200 hover:border-gray-300 text-gray-700'}`}>
                               <Plus size={14} /> {idea}
                             </button>
                           );
@@ -332,19 +405,18 @@ function FindPartnerContent() {
                       </div>
                     </div>
 
+                    {error && (
+                      <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+                    )}
+
                     <div className="mt-auto">
                       <button
-                        onClick={() => { if (canSearch) setMatchState('searching'); }}
+                        onClick={handleStartSearching}
                         disabled={!canSearch}
-                        title={!canSearch ? 'Add at least 1 topic to search' : ''}
-                        className={`w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all ${
-                          canSearch
-                            ? 'bg-gradient-to-r from-[#ffba09] to-[#ffba09] hover:from-[#e5a500] hover:to-[#e5a500] text-white shadow-md shadow-[#ffba09]/25'
-                            : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100'
-                        }`}
+                        className={`w-full py-4 rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all ${canSearch ? 'bg-[var(--accent)] hover:opacity-90 text-white shadow-md' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100'}`}
                       >
                         <Search size={18} />
-                        {canSearch ? 'Find Partner' : `Add 1 more topic`}
+                        Find Partner
                       </button>
                     </div>
                   </>
@@ -359,17 +431,22 @@ function FindPartnerContent() {
                   <div className="absolute inset-0 rounded-full border border-gray-300 opacity-20 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
                   <div className="absolute inset-4 rounded-full border border-gray-400 opacity-30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" style={{ animationDelay: '400ms' }}></div>
                   <div className="absolute inset-8 rounded-full border border-gray-500 opacity-40 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" style={{ animationDelay: '800ms' }}></div>
-                  <div className="relative z-10 w-16 h-16 rounded-lg bg-gradient-to-br from-[#ffba09] to-[#ffba09] shadow-lg flex items-center justify-center text-white">
+                  <div className="relative z-10 w-16 h-16 rounded-lg bg-[var(--accent)] shadow-lg flex items-center justify-center text-white">
                     <MapPin size={28} />
                   </div>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2 animate-pulse">Searching the globe...</h2>
-                <p className="text-gray-500 mb-4">Looking for a native <strong>{partner.language}</strong> speaker matching your criteria.</p>
-                <p className="text-xs text-gray-400 mb-12 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
+                <p className="text-gray-500 mb-4">
+                  Looking for a native speaker matching your criteria.
+                </p>
+                <p className="text-xs text-gray-400 mb-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
                   Level: {partner.level} · {topics.length} topic cards
                 </p>
+                <p className="text-xs text-gray-400 mb-12">
+                  WS: {ws.status}
+                </p>
                 <button
-                  onClick={() => setMatchState('idle')}
+                  onClick={handleCancelSearch}
                   className="text-gray-500 hover:text-black font-medium px-6 py-2.5 rounded-md hover:bg-gray-100 transition-colors flex items-center gap-2 border border-transparent hover:border-gray-200"
                 >
                   <X size={18} /> Cancel Search
@@ -380,15 +457,19 @@ function FindPartnerContent() {
             {/* ── STATE 3: FOUND ── */}
             {matchState === 'found' && (
               <div className="flex-1 flex flex-col justify-center animate-fadeIn">
-                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-[#ffba09] to-[#ffba09]"></div>
+                <div className="absolute top-0 left-0 w-full h-32 bg-[var(--accent)]"></div>
                 <div className="px-8 pb-8 pt-16 relative z-10 text-center flex-1 flex flex-col">
                   <div className="w-24 h-24 mx-auto bg-white p-1 rounded-full shadow-md mb-4 border border-gray-200">
                     <div className="w-full h-full bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-                      <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Partner" className="w-full h-full object-cover" />
+                      {partner.partnerAvatar ? (
+                        <img src={getFullImageUrl(partner.partnerAvatar)!} alt={partner.partnerName} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl font-bold text-gray-400">{partner.partnerName?.charAt(0)?.toUpperCase() ?? '?'}</span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#ffba09] to-[#ffba09] text-white px-3 py-1 rounded font-medium text-xs mx-auto mb-3 tracking-wide shadow-sm">
+                  <div className="inline-flex items-center gap-1.5 bg-[var(--accent)] text-white px-3 py-1 rounded font-medium text-xs mx-auto mb-3 tracking-wide shadow-sm">
                     <Sparkles size={12} /> Match Found
                   </div>
 
@@ -402,26 +483,22 @@ function FindPartnerContent() {
                   <div className="bg-gray-50 rounded-xl p-5 mb-8 text-left border border-gray-200">
                     <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Their Topic Cards</div>
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      {partner.partnerTopics.map((topic, idx) => (
+                      {partner.partnerTopics.length > 0 ? partner.partnerTopics.map((topic, idx) => (
                         <div key={idx} className="bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm flex items-center gap-2">
                           <MessageSquare size={14} className="text-gray-400 flex-shrink-0" />
                           <span className="text-gray-800 text-sm font-medium truncate">{topic}</span>
                         </div>
-                      ))}
+                      )) : (
+                        <p className="text-gray-400 text-sm col-span-full">No topics shared</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="mt-auto flex gap-4">
-                    <button
-                      onClick={() => setMatchState('idle')}
-                      className="flex-1 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 font-medium py-3 rounded-md transition-colors shadow-sm"
-                    >
+                    <button onClick={handleSkip} className="flex-1 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 font-medium py-3 rounded-md transition-colors shadow-sm">
                       Skip
                     </button>
-                    <button
-                      onClick={() => router.push('/room')}
-                      className="flex-[2] bg-black hover:bg-gray-800 text-white font-medium py-3 rounded-md shadow-sm transition-all flex items-center justify-center gap-2"
-                    >
+                    <button onClick={handleJoinCall} className="flex-[2] bg-black hover:bg-gray-800 text-white font-medium py-3 rounded-md shadow-sm transition-all flex items-center justify-center gap-2">
                       <Video size={20} /> Join Video Call
                     </button>
                   </div>
@@ -440,7 +517,7 @@ export default function FindPartnerPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-6 h-6 border-2 border-[#ffba09] border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
       </div>
     }>
       <FindPartnerContent />

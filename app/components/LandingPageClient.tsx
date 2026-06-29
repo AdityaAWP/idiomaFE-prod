@@ -75,7 +75,7 @@ function HeroSection() {
 
           <h1 className="text-4xl lg:text-[3.6rem] font-extrabold mb-5 tracking-tight text-[#2B2B2B] leading-[1.08]">
             Master languages through{' '}
-            <span className="bg-gradient-to-r from-[#ffba09] to-[#ffba09] bg-clip-text text-transparent">
+            <span className="text-[#ffba09]">
               Idiomamate
             </span>
             .
@@ -88,7 +88,7 @@ function HeroSection() {
             <Link
               href="/register"
               id="hero-get-started"
-              className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#ffba09] to-[#ffba09] hover:from-[#e5a500] hover:to-[#e5a500] text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-[#ffba09]/30 hover:shadow-xl hover:shadow-[#ffba09]/40 hover:scale-105"
+              className="group inline-flex items-center gap-2 bg-[#ffba09] hover:bg-[#ffba09] text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-[#ffba09]/30 hover:shadow-xl hover:shadow-[#ffba09]/40 hover:scale-105"
             >
               Get Started
               <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -429,14 +429,14 @@ function MethodologySection() {
         {/* Stepper row */}
         <div className="relative max-w-4xl mx-auto">
           {/* Connecting line */}
-          <div className="absolute top-[28px] left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-[2px] bg-gradient-to-r from-[#ffba09] via-[#ffba09] to-[#ffba09] hidden md:block z-0" />
+          <div className="absolute top-[28px] left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-[2px] bg-[#ffba09] hidden md:block z-0" />
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative z-10">
             {[
-              { num: '01', color: 'from-[#ffba09] to-[#ffcf50]', title: 'Create Profile', desc: 'Set your language goals and proficiency level.' },
-              { num: '02', color: 'from-[#ffba09] to-[#ffcf50]', title: 'Get Matched', desc: 'Our AI finds perfect conversation partners.' },
-              { num: '03', color: 'from-[#ffba09] to-[#ffba09]', title: 'Practice Live', desc: 'Join interactive sessions with guidance.' },
-              { num: '04', color: 'from-[#ffba09] to-[#ffba09]', title: 'Track Progress', desc: 'Monitor improvements and celebrate wins.' },
+              { num: '01', color: 'bg-[#ffba09]', title: 'Create Profile', desc: 'Set your language goals and proficiency level.' },
+              { num: '02', color: 'bg-[#ffba09]', title: 'Get Matched', desc: 'Our AI finds perfect conversation partners.' },
+              { num: '03', color: 'bg-[#ffba09]', title: 'Practice Live', desc: 'Join interactive sessions with guidance.' },
+              { num: '04', color: 'bg-[#ffba09]', title: 'Track Progress', desc: 'Monitor improvements and celebrate wins.' },
             ].map((s, i) => (
               <motion.div
                 key={s.num}
@@ -447,7 +447,7 @@ function MethodologySection() {
                 className="flex flex-col items-center text-center"
               >
                 {/* Circle */}
-                <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${s.color} flex items-center justify-center text-white font-extrabold text-lg shadow-lg mb-4`}>
+                <div className={`w-14 h-14 rounded-full ${s.color} flex items-center justify-center text-white font-extrabold text-lg shadow-lg mb-4`}>
                   {s.num}
                 </div>
                 <h4 className="text-sm font-bold text-[#2B2B2B] mb-1">{s.title}</h4>
@@ -495,7 +495,7 @@ function CtaBanner() {
           <Link
             href="/register"
             id="cta-get-started"
-            className="inline-flex items-center gap-3 bg-gradient-to-r from-[#ffba09] to-[#ffba09] hover:from-[#e5a500] hover:to-[#e5a500] text-white px-10 py-5 rounded-2xl font-bold text-lg transition-all shadow-xl shadow-[#ffba09]/30 hover:shadow-2xl hover:shadow-[#ffba09]/40"
+            className="inline-flex items-center gap-3 bg-[#ffba09] hover:bg-[#ffba09] text-white px-10 py-5 rounded-2xl font-bold text-lg transition-all shadow-xl shadow-[#ffba09]/30 hover:shadow-2xl hover:shadow-[#ffba09]/40"
           >
             Get Started — It&apos;s Free
             <ArrowRight size={20} />

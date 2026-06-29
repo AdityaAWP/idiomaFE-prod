@@ -38,12 +38,13 @@ export default function LearningGoalSelector() {
   const handlePrev = () => { setActiveIndex(prev => prev > 0 ? prev - 1 : LANGUAGES.length - 1); setShowLevels(false); };
   const handleNext = () => { setActiveIndex(prev => prev < LANGUAGES.length - 1 ? prev + 1 : 0); setShowLevels(false); };
 
-  const handleSave = () => {
-    if (!selectedLevel) return;
-    const lvlEntry = LEVELS.find(l => l.value === selectedLevel)!;
+  const handleSave = (levelValue: string) => {
+    const lvlEntry = LEVELS.find(l => l.value === levelValue);
+    if (!lvlEntry) return;
     // Push into PartnerContext so find-partner skips Step 1
     setLanguage(activeLang.name);
     setLevel(lvlEntry.ctxLevel);
+    setSelectedLevel(levelValue);
     setIsSaved(true);
     // Redirect to find-partner → topics step only
     router.push('/find-partner?from=goal');
@@ -53,14 +54,14 @@ export default function LearningGoalSelector() {
   if (isSaved) {
     const lvl = LEVELS.find(l => l.value === selectedLevel);
     return (
-      <div className="bg-[#FFF8F0] border border-[#F2DCC2] rounded-2xl p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between shadow-sm animate-fadeIn">
+      <div className="bg-[var(--paper-2)] border border-[var(--line)] rounded-2xl p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between shadow-sm animate-fadeIn">
         <div className="flex items-center gap-5">
           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-md bg-gradient-to-br ${activeLang.gradient}`}>
             {activeLang.code}
           </div>
           <div>
-            <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-              Learning {activeLang.name} <CheckCircle2 className="text-[#ffba09]" size={20} />
+            <h3 className="font-bold text-[var(--ink)] text-lg flex items-center gap-2">
+              Learning {activeLang.name} <CheckCircle2 className="text-[var(--accent)]" size={20} />
             </h3>
             <p className="text-sm text-gray-600 font-medium">Target Level: {lvl?.label}</p>
           </div>
@@ -68,19 +69,19 @@ export default function LearningGoalSelector() {
         <div className="mt-6 md:mt-0 flex items-center gap-3">
           <button
             onClick={() => { setIsSaved(false); setShowLevels(false); setSelectedLevel(''); }}
-            className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors px-4 py-2"
+            className="text-sm font-semibold text-[var(--mute)] hover:text-[var(--ink)] transition-colors px-4 py-2"
           >
             Change Goal
           </button>
           <Link
             href="/find-partner?from=goal"
-            className="bg-[#ffba09] hover:bg-[#e5a500] text-white px-6 py-2.5 rounded-full font-bold shadow-md transition-colors flex items-center gap-2"
+            className="bg-[var(--accent)] text-white px-6 py-2.5 rounded-full font-bold shadow-md transition-colors flex items-center gap-2"
           >
             Find a Partner <Play fill="currentColor" size={14} />
           </Link>
           <Link
             href="/lobbies"
-            className="bg-white border border-gray-200 hover:border-gray-300 text-gray-800 px-6 py-2.5 rounded-full font-bold shadow-sm transition-colors"
+            className="bg-[var(--paper)] border border-[var(--line)] hover:border-[var(--accent)] text-[var(--ink)] px-6 py-2.5 rounded-full font-bold shadow-sm transition-colors"
           >
             Join Lobbies
           </Link>
@@ -90,14 +91,14 @@ export default function LearningGoalSelector() {
   }
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 mb-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-fadeInUp">
+    <div className="bg-[var(--paper)] rounded-3xl border border-[var(--line)] p-6 md:p-8 mb-8 animate-fadeInUp">
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-xl bg-[#FFF8DC] text-[#ffba09] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-[var(--paper-2)] text-[var(--accent)] flex items-center justify-center">
           <Globe size={20} />
         </div>
         <div>
-          <h2 className="text-xl font-extrabold text-gray-900">Set your learning goal</h2>
-          <p className="text-gray-500 text-sm">Slide to find a language. Tap the center card to choose your level.</p>
+          <h2 className="text-xl font-extrabold text-[var(--ink)]">Set your learning goal</h2>
+          <p className="text-[var(--mute)] text-sm">Slide to find a language. Tap the center card to choose your level.</p>
         </div>
       </div>
 
@@ -153,7 +154,7 @@ export default function LearningGoalSelector() {
                   {isActive && !showLevels && (
                     <button
                       onClick={e => { e.stopPropagation(); setShowLevels(true); }}
-                      className="mt-6 w-full py-3.5 rounded-full bg-[#ffba09] hover:bg-[#e5a500] text-white font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
+                      className="mt-6 w-full py-3.5 rounded-full bg-[var(--accent)] text-white font-bold text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
                     >
                       <GraduationCap size={18} /> Choose level
                     </button>
@@ -162,37 +163,26 @@ export default function LearningGoalSelector() {
                   {/* Level overlay */}
                   {isActive && showLevels && (
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-md rounded-[2rem] p-6 flex flex-col justify-center animate-fadeIn z-20">
-                      <h4 className="text-lg font-bold mb-4 text-center">Your Level</h4>
+                      <h4 className="text-lg font-bold mb-3 text-center">Choose Your Level</h4>
+                      <p className="text-white/60 text-xs text-center mb-4">Tap a level to go straight to matching</p>
                       <div className="flex flex-col gap-2">
                         {LEVELS.map(lv => (
                           <button
                             key={lv.value}
-                            onClick={e => { e.stopPropagation(); setSelectedLevel(lv.value); }}
-                            className={`p-3 rounded-xl text-left transition-all ${selectedLevel === lv.value
-                                ? 'bg-[#ffba09] text-white shadow-md'
-                                : 'bg-white/20 hover:bg-white/30 text-white'
-                              }`}
+                            onClick={e => { e.stopPropagation(); handleSave(lv.value); }}
+                            className="p-3 rounded-xl text-left transition-all bg-white/20 hover:bg-[var(--accent)] active:scale-95 text-white hover:shadow-md"
                           >
                             <div className="font-bold text-sm">{lv.label}</div>
                             <div className="text-[11px] opacity-70 mt-0.5">{lv.description}</div>
                           </button>
                         ))}
                       </div>
-                      <div className="mt-auto flex gap-2 pt-4">
-                        <button
-                          onClick={e => { e.stopPropagation(); setShowLevels(false); setSelectedLevel(''); }}
-                          className="flex-1 py-3 rounded-full bg-white/20 text-white font-bold text-sm"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={e => { e.stopPropagation(); handleSave(); }}
-                          disabled={!selectedLevel}
-                          className="flex-1 py-3 rounded-full bg-[#ffba09] disabled:opacity-50 text-white font-bold text-sm transition-colors"
-                        >
-                          Confirm →
-                        </button>
-                      </div>
+                      <button
+                        onClick={e => { e.stopPropagation(); setShowLevels(false); }}
+                        className="mt-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 font-semibold text-sm transition-colors"
+                      >
+                        ← Back
+                      </button>
                     </div>
                   )}
                   </div>
@@ -205,7 +195,7 @@ export default function LearningGoalSelector() {
         {/* Pagination Dots */}
         <div className="absolute bottom-4 flex gap-2">
           {LANGUAGES.map((_, i) => (
-            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${activeIndex === i ? 'w-6 bg-[#ffba09]' : 'w-1.5 bg-gray-300'}`} />
+            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${activeIndex === i ? 'w-6 bg-[var(--accent)]' : 'w-1.5 bg-[var(--mute)]'}`} />
           ))}
         </div>
       </div>
