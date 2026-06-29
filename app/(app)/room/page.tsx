@@ -79,6 +79,7 @@ export default function VideoRoomPage() {
     { id:'1', sender:'system', text:'🎉 Connected! Your partner\'s topics are ready.' },
   ]);
   const [input, setInput] = useState('');
+  const [repeating, setRepeating] = useState(false);
   const chatEnd = useRef<HTMLDivElement>(null);
   useEffect(() => { chatEnd.current?.scrollIntoView({ behavior:'smooth' }); }, [messages]);
 
