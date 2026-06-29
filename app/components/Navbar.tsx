@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Bell, Menu, ChevronDown, Settings, LogOut,
-  UserPlus, MessageSquare, Check
+  UserPlus, MessageSquare, Check, X
 } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '../context/LanguageContext';
