@@ -75,7 +75,7 @@ export function useLobbyCall(lobbyId: string) {
         clientRef.current = client;
 
         // Register handlers BEFORE joining
-        client.on('user-published', async (user: any, mediaType: string) => {
+        client.on('user-published', async (user: any, mediaType: 'audio' | 'video' | 'datachannel') => {
           if (cancelled || stoppedRef.current) return;
           await client.subscribe(user, mediaType);
           if (cancelled || stoppedRef.current) return;
