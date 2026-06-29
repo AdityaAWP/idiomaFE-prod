@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   UserPlus,
@@ -31,7 +31,7 @@ interface FriendView {
   unread: number;
 }
 
-export default function FriendsPage() {
+function FriendsPageInner() {
   const { user } = useAuth();
   const dmSocket = useDmSocket();
   const [friendList, setFriendList] = useState<FriendView[]>([]);
@@ -352,3 +352,5 @@ export default function FriendsPage() {
     </>
   );
 }
+
+export default function FriendsPage() { return <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="w-12 h-12 border-4 border-gray-200 rounded-full animate-spin" /></div>}><FriendsPageInner /></Suspense>; }
