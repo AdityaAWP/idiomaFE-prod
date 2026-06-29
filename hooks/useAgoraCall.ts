@@ -181,23 +181,27 @@ export function useAgoraCall() {
           ? { cameraId: devices[0].deviceId }
           : { facingMode: 'user' };
 
-      const [micTrack, camTrack] = await Promise.all([
-        AgoraRTC.createMicrophoneAudioTrack(),
-        AgoraRTC.createCameraVideoTrack(cameraConfig),
-      ]);
+      const micTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      let camTrack: any = null;
+      try {
+        camTrack = await AgoraRTC.createCameraVideoTrack(cameraConfig);
+      } catch {
+        // Camera unavailable (device_not_found, permission denied, etc.) — continue audio-only
+      }
       if (cancelled) { await client.leave(); return; }
 
       localAudioRef.current = micTrack;
       localVideoTrackRef.current = camTrack;
-      await client.publish([micTrack, camTrack]);
+      const tracksToPublish = camTrack ? [micTrack, camTrack] : [micTrack];
+      await client.publish(tracksToPublish);
       if (cancelled) { await client.leave(); return; }
 
       setIsJoined(true);
       setIsMuted(false);
-      setIsVideoOff(false);
+      setIsVideoOff(!camTrack);
       setLoading(false);
 
-      if (localDiv.current) {
+      if (camTrack && localDiv.current) {
         try { camTrack.play(localDiv.current); } catch {}
       }
 
