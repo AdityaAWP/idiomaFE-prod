@@ -68,7 +68,7 @@ export function useLobbyCall(lobbyId: string) {
           }
         );
         if (!tokenRes.ok) throw new Error(`Token fetch failed: ${tokenRes.status}`);
-        const { channelName, token } = await tokenRes.json();
+        const { channelName, token: agoraToken } = await tokenRes.json();
 
         const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
         const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
@@ -138,7 +138,7 @@ export function useLobbyCall(lobbyId: string) {
         });
 
         // Join channel
-        const uid = await client.join(APP_ID, channelName, token, null);
+        const uid = await client.join(APP_ID, channelName, agoraToken, null);
         if (cancelled || stoppedRef.current) { await client.leave(); return; }
         const myUid = String(uid);
 
