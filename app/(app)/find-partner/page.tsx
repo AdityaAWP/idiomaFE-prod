@@ -137,7 +137,8 @@ function FindPartnerContent() {
     if (topics.length < 1) return;
     setError('');
     setMatchState('searching');
-    const connected = await ws.connect(partner.level.toLowerCase());
+    const level = `${partner.language.toLowerCase()}.${partner.level.toLowerCase()}`;
+    const connected = await ws.connect(level);
     if (!connected) {
       setError('Failed to connect to matchmaking');
       setMatchState('idle');
@@ -147,7 +148,7 @@ function FindPartnerContent() {
     await new Promise((r) => setTimeout(r, 600));
     try {
       await matchApi.join({
-        level: partner.level.toLowerCase(),
+        level,
         topics,
       });
     } catch (err: any) {
@@ -158,15 +159,16 @@ function FindPartnerContent() {
   };
 
   const handleSkip = async () => {
+    const level = `${partner.language.toLowerCase()}.${partner.level.toLowerCase()}`;
     // Decline current match and restart search
     try {
-      await matchApi.cancel({ level: partner.level.toLowerCase() });
+      await matchApi.cancel({ level });
     } catch { /* ignore */ }
     setMatchState('searching');
     // Re-join queue (WS is still connected)
     await new Promise((r) => setTimeout(r, 600));
     try {
-      await matchApi.join({ level: partner.level.toLowerCase(), topics });
+      await matchApi.join({ level, topics });
     } catch (err: any) {
       setError(err.message ?? 'Failed to re-join queue');
       setMatchState('idle');
@@ -175,8 +177,9 @@ function FindPartnerContent() {
   };
 
   const handleCancelSearch = async () => {
+    const level = `${partner.language.toLowerCase()}.${partner.level.toLowerCase()}`;
     try {
-      await matchApi.cancel({ level: partner.level.toLowerCase() });
+      await matchApi.cancel({ level });
     } catch { /* ignore */ }
     ws.disconnect();
     setMatchState('idle');
